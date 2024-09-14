@@ -382,7 +382,7 @@ namespace WeifenLuo.WinFormsUI.Docking
                 }
             }
 
-            private static ContentStruct[] LoadContents(XmlTextReader xmlIn)
+            private static ContentStruct[] LoadContents(XmlReader xmlIn)
             {
                 int countOfContents = Convert.ToInt32(xmlIn.GetAttribute("Count"), CultureInfo.InvariantCulture);
                 ContentStruct[] contents = new ContentStruct[countOfContents];
@@ -403,7 +403,7 @@ namespace WeifenLuo.WinFormsUI.Docking
                 return contents;
             }
 
-            private static PaneStruct[] LoadPanes(XmlTextReader xmlIn)
+            private static PaneStruct[] LoadPanes(XmlReader xmlIn)
             {
                 EnumConverter dockStateConverter = new EnumConverter(typeof(DockState));
                 int countOfPanes = Convert.ToInt32(xmlIn.GetAttribute("Count"), CultureInfo.InvariantCulture);
@@ -439,7 +439,7 @@ namespace WeifenLuo.WinFormsUI.Docking
                 return panes;
             }
 
-            private static DockWindowStruct[] LoadDockWindows(XmlTextReader xmlIn, DockPanel dockPanel)
+            private static DockWindowStruct[] LoadDockWindows(XmlReader xmlIn, DockPanel dockPanel)
             {
                 EnumConverter dockStateConverter = new EnumConverter(typeof(DockState));
                 EnumConverter dockAlignmentConverter = new EnumConverter(typeof(DockAlignment));
@@ -476,7 +476,7 @@ namespace WeifenLuo.WinFormsUI.Docking
                 return dockWindows;
             }
 
-            private static FloatWindowStruct[] LoadFloatWindows(XmlTextReader xmlIn)
+            private static FloatWindowStruct[] LoadFloatWindows(XmlReader xmlIn)
             {
                 EnumConverter dockAlignmentConverter = new EnumConverter(typeof(DockAlignment));
                 RectangleConverter rectConverter = new RectangleConverter();
@@ -515,6 +515,17 @@ namespace WeifenLuo.WinFormsUI.Docking
 
             public static void LoadFromXml(DockPanel dockPanel, Stream stream, DeserializeDockContent deserializeContent, bool closeStream)
             {
+                using (var xmlIn = new XmlTextReader(stream) { WhitespaceHandling = WhitespaceHandling.None })
+                {
+                    xmlIn.MoveToContent();
+                    LoadFromXml(dockPanel, xmlIn, deserializeContent);
+                    if (closeStream)
+                        xmlIn.Close();
+                }
+            }
+
+            public static void LoadFromXml(DockPanel dockPanel, XmlReader xmlIn, DeserializeDockContent deserializeContent)
+            {
                 if (dockPanel.Contents.Count != 0)
                     throw new InvalidOperationException(Strings.DockPanel_LoadFromXml_AlreadyInitialized);
 
@@ -523,10 +534,7 @@ namespace WeifenLuo.WinFormsUI.Docking
                 PaneStruct[] panes;
                 DockWindowStruct[] dockWindows;
                 FloatWindowStruct[] floatWindows;
-                using (var xmlIn = new XmlTextReader(stream) { WhitespaceHandling = WhitespaceHandling.None })
                 {
-                    xmlIn.MoveToContent();
-
                     while (!xmlIn.Name.Equals("DockPanel"))
                     {
                         if (!MoveToNextElement(xmlIn))
@@ -565,9 +573,6 @@ namespace WeifenLuo.WinFormsUI.Docking
                     if (xmlIn.Name != "FloatWindows")
                         throw new ArgumentException(Strings.DockPanel_LoadFromXml_InvalidXmlFormat);
                     floatWindows = LoadFloatWindows(xmlIn);
-
-                    if (closeStream)
-                        xmlIn.Close();
                 }
 
                 dockPanel.SuspendLayout(true);
@@ -733,7 +738,7 @@ namespace WeifenLuo.WinFormsUI.Docking
                 dockPanel.ResumeLayout(true, true);
             }
 
-            private static bool MoveToNextElement(XmlTextReader xmlIn)
+            private static bool MoveToNextElement(XmlReader xmlIn)
             {
                 if (!xmlIn.Read())
                     return false;
@@ -820,6 +825,17 @@ namespace WeifenLuo.WinFormsUI.Docking
         public void LoadFromXml(Stream stream, DeserializeDockContent deserializeContent, bool closeStream)
         {
             Persistor.LoadFromXml(this, stream, deserializeContent, closeStream);
+        }
+
+        /// <summary>
+        /// Loads layout from a XML reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <param name="deserializeContent">Deserialization handler.</param>
+        /// <exception cref="Exception">Deserialization might throw exceptions.</exception>
+        public void LoadFromXml(XmlReader reader, DeserializeDockContent deserializeContent)
+        {
+            Persistor.LoadFromXml(this, reader, deserializeContent);
         }
     }
 }
