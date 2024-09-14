@@ -233,9 +233,9 @@ namespace WeifenLuo.WinFormsUI.Docking
 
             public static void SaveAsXml(DockPanel dockPanel, Stream stream, Encoding encoding, bool upstream)
             {
-                XmlWriter xmlOut = XmlWriter.Create(stream, new XmlWriterSettings() 
-                { 
-                    Encoding = encoding, 
+                XmlWriter xmlOut = XmlWriter.Create(stream, new XmlWriterSettings()
+                {
+                    Encoding = encoding,
                     Indent = true,
                     OmitXmlDeclaration = upstream
                 });
@@ -243,7 +243,18 @@ namespace WeifenLuo.WinFormsUI.Docking
                 // Always begin file with identification and warning
                 xmlOut.WriteComment(Strings.DockPanel_Persistor_XmlFileComment1);
                 xmlOut.WriteComment(Strings.DockPanel_Persistor_XmlFileComment2);
+                SaveAsXml(dockPanel, xmlOut);
+                if (!upstream)
+                {
+                    xmlOut.WriteEndDocument();
+                    xmlOut.Close();
+                }
+                else
+                    xmlOut.Flush();
+            }
 
+            public static void SaveAsXml(DockPanel dockPanel, XmlWriter xmlOut)
+            {
                 // Associate a version number with the root element so that future version of the code
                 // will be able to be backwards compatible or at least recognise out of date versions
                 xmlOut.WriteStartElement("DockPanel");
@@ -354,14 +365,6 @@ namespace WeifenLuo.WinFormsUI.Docking
                 xmlOut.WriteEndElement();   //	</FloatWindows>
 
                 xmlOut.WriteEndElement();
-
-                if (!upstream)
-                {
-                    xmlOut.WriteEndDocument();
-                    xmlOut.Close();
-                }
-                else
-                    xmlOut.Flush();
             }
 
             public static void LoadFromXml(DockPanel dockPanel, string fileName, DeserializeDockContent deserializeContent)
@@ -775,6 +778,11 @@ namespace WeifenLuo.WinFormsUI.Docking
         public void SaveAsXml(Stream stream, Encoding encoding, bool upstream)
         {
             Persistor.SaveAsXml(this, stream, encoding, upstream);
+        }
+
+        public void SaveAsXml(XmlWriter writer)
+        {
+            Persistor.SaveAsXml(this, writer);
         }
 
         /// <summary>
